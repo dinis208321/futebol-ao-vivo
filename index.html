@@ -1,66 +1,182 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8">
-  <title>Jogos de Futebol em Direto</title>
+  <meta charset="UTF-8" />
+  <title>Futebol em Direto - Upgrade do Dinis</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }
-    .game { background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .team-logo { width: 40px; vertical-align: middle; margin-right: 10px; }
-    .score { font-size: 20px; font-weight: bold; margin: 10px 0; }
-    .status { font-size: 14px; color: gray; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f7f9fc;
+      margin: 0;
+      padding: 20px;
+      color: #222;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #1a237e;
+    }
+    .league {
+      margin-top: 30px;
+      margin-bottom: 10px;
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: #3f51b5;
+      border-bottom: 2px solid #3f51b5;
+      padding-bottom: 5px;
+    }
+    .game {
+      background: #fff;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 8px rgb(0 0 0 / 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .status {
+      font-size: 0.85rem;
+      color: #555;
+      font-weight: 600;
+    }
+    .teams {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+    .team {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 40%;
+    }
+    .team img {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+    .score {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #1a237e;
+      min-width: 70px;
+      text-align: center;
+    }
+    .scorers {
+      font-size: 0.9rem;
+      color: #444;
+      line-height: 1.3;
+    }
+    @media (max-width: 600px) {
+      .teams {
+        flex-direction: column;
+        gap: 6px;
+      }
+      .team {
+        max-width: 100%;
+        justify-content: center;
+      }
+      .score {
+        min-width: unset;
+      }
+    }
   </style>
 </head>
 <body>
-
-  <h1>⚽ Resultados em Direto</h1>
-  <div id="results">A carregar dados...</div>
+  <h1>⚽ Resultados em Direto - Upgrade do Dinis</h1>
+  <div id="results">A carregar jogos ao vivo...</div>
 
   <script>
-    const apiKey = 'b3f736533291808635c4065ba505ba63'; // ← aqui está a tua chave!
+    const apiKey = 'b3f736533291808635c4065ba505ba63';
     const url = 'https://v3.football.api-sports.io/fixtures?live=all';
 
-    fetch(url, {
-      method: 'GET',
-      headers: {
-        'x-apisports-key': apiKey
-      }
-    })
-    .then(response => response.json())
-    .then(data => {
-      const resultsDiv = document.getElementById('results');
-      resultsDiv.innerHTML = '';
+    // Formata os marcadores de golos com nome e minuto
+    function formatScorers(events, teamId) {
+      if (!events) return 'Sem golos.';
+      const goals = events.filter(e => e.type === 'Goal' && e.team.id === teamId);
+      if (goals.length === 0) return 'Sem golos.';
+      return goals.map(g => `${g.player.name} (${g.time.elapsed}ʼ)`).join(', ');
+    }
 
-      if (data.response.length === 0) {
-        resultsDiv.textContent = 'Sem jogos em direto neste momento.';
-        return;
-      }
+    function loadGames() {
+      fetch(url, {
+        method: 'GET',
+        headers: {
+          'x-apisports-key': apiKey
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = '';
 
-      data.response.forEach(jogo => {
-        const home = jogo.teams.home;
-        const away = jogo.teams.away;
-        const score = jogo.goals;
-        const status = jogo.fixture.status.long;
+        if (data.response.length === 0) {
+          resultsDiv.textContent = 'Sem jogos em direto neste momento.';
+          return;
+        }
 
-        const gameHTML = `
-          <div class="game">
-            <div>
-              <img src="${home.logo}" class="team-logo"> ${home.name}
-              <span class="score">${score.home} - ${score.away}</span>
-              <img src="${away.logo}" class="team-logo"> ${away.name}
-            </div>
-            <div class="status">⏱️ ${status}</div>
-          </div>
-        `;
+        // Agrupa os jogos por liga
+        const ligas = {};
+        data.response.forEach(jogo => {
+          const ligaNome = jogo.league.name;
+          if (!ligas[ligaNome]) ligas[ligaNome] = [];
+          ligas[ligaNome].push(jogo);
+        });
 
-        resultsDiv.innerHTML += gameHTML;
+        // Para cada liga cria o html
+        for (const [ligaNome, jogos] of Object.entries(ligas)) {
+          resultsDiv.innerHTML += `<div class="league">🏆 ${ligaNome}</div>`;
+
+          jogos.forEach(jogo => {
+            const home = jogo.teams.home;
+            const away = jogo.teams.away;
+            const score = jogo.goals;
+            const status = jogo.fixture.status;
+            const tempo = status.elapsed !== null ? `${status.elapsed}ʼ` : status.long;
+            const events = jogo.events;
+
+            const homeScorers = formatScorers(events, home.id);
+            const awayScorers = formatScorers(events, away.id);
+
+            const gameHTML = `
+              <div class="game">
+                <div class="status">⏱️ ${tempo} - ${status.long}</div>
+                <div class="teams">
+                  <div class="team">
+                    <img src="${home.logo}" alt="${home.name}" /> ${home.name}
+                  </div>
+                  <div class="score">${score.home} - ${score.away}</div>
+                  <div class="team">
+                    ${away.name} <img src="${away.logo}" alt="${away.name}" />
+                  </div>
+                </div>
+                <div class="scorers">
+                  <strong>${home.name}:</strong> ${homeScorers}<br />
+                  <strong>${away.name}:</strong> ${awayScorers}
+                </div>
+              </div>
+            `;
+
+            resultsDiv.innerHTML += gameHTML;
+          });
+        }
+      })
+      .catch(error => {
+        console.error(error);
+        document.getElementById('results').textContent = 'Erro ao carregar dados.';
       });
-    })
-    .catch(error => {
-      console.error(error);
-      document.getElementById('results').textContent = 'Erro ao carregar os dados!';
-    });
-  </script>
+    }
 
+    // Carrega no início
+    loadGames();
+
+    // Atualiza a cada 30 segundos
+    setInterval(loadGames, 30000);
+  </script>
 </body>
 </html>
