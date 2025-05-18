@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Jogos de Futebol em Direto</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }
+    .game { background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .team-logo { width: 40px; vertical-align: middle; margin-right: 10px; }
+    .score { font-size: 20px; font-weight: bold; margin: 10px 0; }
+    .status { font-size: 14px; color: gray; }
+  </style>
+</head>
+<body>
+
+  <h1>⚽ Resultados em Direto</h1>
+  <div id="results">A carregar dados...</div>
+
+  <script>
+    const apiKey = 'b3f736533291808635c4065ba505ba63'; // ← aqui está a tua chave!
+    const url = 'https://v3.football.api-sports.io/fixtures?live=all';
+
+    fetch(url, {
+      method: 'GET',
+      headers: {
+        'x-apisports-key': apiKey
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '';
+
+      if (data.response.length === 0) {
+        resultsDiv.textContent = 'Sem jogos em direto neste momento.';
+        return;
+      }
+
+      data.response.forEach(jogo => {
+        const home = jogo.teams.home;
+        const away = jogo.teams.away;
+        const score = jogo.goals;
+        const status = jogo.fixture.status.long;
+
+        const gameHTML = `
+          <div class="game">
+            <div>
+              <img src="${home.logo}" class="team-logo"> ${home.name}
+              <span class="score">${score.home} - ${score.away}</span>
+              <img src="${away.logo}" class="team-logo"> ${away.name}
+            </div>
+            <div class="status">⏱️ ${status}</div>
+          </div>
+        `;
+
+        resultsDiv.innerHTML += gameHTML;
+      });
+    })
+    .catch(error => {
+      console.error(error);
+      document.getElementById('results').textContent = 'Erro ao carregar os dados!';
+    });
+  </script>
+
+</body>
+</html>
